@@ -1,0 +1,51 @@
+---
+description: Project scope, style, and constraints for DTU findit webscraper
+alwaysApply: true
+---
+
+# Project rules
+
+## SCOPE
+
+* Only implement what the user explicitly asks for.
+* Do not propose or implement additional features unless the user requests them.
+
+## STYLE
+
+* Prefer the simplest working solution.
+* Keep code short and readable.
+* Avoid heavy abstractions, frameworks, and complex patterns.
+* Prefer standard library where possible.
+
+## OUTPUT FORMAT
+
+* Provide only the code needed to run the requested step.
+* Keep comments minimal (only where needed to clarify a non-obvious line).
+* No long docstrings. If a docstring is necessary, limit it to 1–2 lines.
+* No .md files unless instructed
+
+## NO INVENTED REQUIREMENTS
+
+* Do not add "fallback strategies", "advanced robustness", or "edge-case handling" unless asked.
+* Do not add retries, queues, parallelism, caching, data validation, or monitoring unless requested.
+* Do not change storage format, schema, or fields unless the user requests it.
+
+## ASSUMPTIONS
+
+* If a required detail is missing, make the smallest reasonable assumption and state it in one sentence.
+* Do not introduce new assumptions beyond that.
+
+## DEPENDENCIES
+
+* Use only the dependencies explicitly approved by the user (currently: Selenium, BeautifulSoup, requests).
+* Do not add new libraries unless the user asks.
+
+## DATA
+
+* Extract only the fields the user specifies.
+* If fields are not specified, extract only the thesis URL list first.
+
+## DONE MEANS DONE
+
+* Stop once the requested output is produced.
+* Do not include "next steps" unless the user asks.
