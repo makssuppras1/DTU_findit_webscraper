@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.eggs/
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Project outputs and state
+progress.json
+test_output.csv
+detail_urls.json
+
+# GCP credentials (keep keys out of repo)
+*credentials*.json
+service-account*.json
+*.pem
+
+# Google Cloud SDK (if installed locally)
+google-cloud-sdk/
+google-cloud-cli*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# uv / ruff
+.uv/
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
