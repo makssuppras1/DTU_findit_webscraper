@@ -1,0 +1,16 @@
+[project]
+name = "dtu-findit-webscraper"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "bs4>=0.0.2",
+    "gcloud>=0.18.3",
+    "google-cloud-storage>=2.0.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.1",
+    "pandas>=3.0.0",
+    "requests>=2.32.5",
+    "selenium>=4.40.0",
+]
