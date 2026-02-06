@@ -33,9 +33,9 @@ def _run_worker(args):
         download_dir = Path(tmpdir)
         driver = scraper.get_driver(str(download_dir), worker_id)
         try:
-            driver.get(config.TARGET_URL)
+            scraper.get_url_with_retry(driver, config.TARGET_URL)
             scraper.handle_dtu_findit_entry(driver)
-            time.sleep(2)
+            time.sleep(1)
             soup = BeautifulSoup(driver.page_source, "html.parser")
             if len(scraper.extract_detail_urls_from_soup(soup)) == 0:
                 log.warning("Worker %d: complete verification/login in browser", worker_id)
@@ -58,16 +58,19 @@ def _run_worker(args):
                 for attempt in range(config.MAX_RETRIES):
                     try:
                         results_url = driver.current_url
-                        try:
-                            _, _, download_btn = next(
-                                (rid, t, b) for rid, t, b in scraper.get_records_with_downloads_on_page(driver)
-                                if rid == record_id
-                            )
-                        except StopIteration:
-                            log.warning("Record %s not found on page", record_id)
-                            break
+                        if attempt == 0:
+                            download_btn_to_use = download_btn
+                        else:
+                            try:
+                                _, _, download_btn_to_use = next(
+                                    (rid, t, b) for rid, t, b in scraper.get_records_with_downloads_on_page(driver)
+                                    if rid == record_id
+                                )
+                            except StopIteration:
+                                log.warning("Record %s not found on page", record_id)
+                                break
                         pdf_path = scraper.click_download_and_wait(
-                            driver, download_btn, download_dir, main_handle, results_url
+                            driver, download_btn_to_use, download_dir, main_handle, results_url
                         )
                         if not pdf_path:
                             fail += 1
@@ -105,9 +108,9 @@ def _run_main_single(bucket, metadata_lookup):
         driver = scraper.get_driver(str(download_dir))
         processed = storage.load_progress()
         try:
-            driver.get(config.TARGET_URL)
+            scraper.get_url_with_retry(driver, config.TARGET_URL)
             scraper.handle_dtu_findit_entry(driver)
-            time.sleep(2)
+            time.sleep(1)
             soup = BeautifulSoup(driver.page_source, "html.parser")
             if len(scraper.extract_detail_urls_from_soup(soup)) == 0:
                 log.info("Complete verification and DTU login in the browser if needed.")
@@ -117,64 +120,72 @@ def _run_main_single(bucket, metadata_lookup):
             ok, skip, fail = 0, 0, 0
             count = 0
             session_lost = False
-            for record_id, title, download_btn in scraper.iterate_pages_with_records(driver):
-                if session_lost:
-                    break
-                if config.MAX_RECORDS and count >= config.MAX_RECORDS:
-                    log.info("Reached MAX_RECORDS=%d", config.MAX_RECORDS)
-                    break
-                count += 1
-                if record_id in processed:
-                    skip += 1
-                    if count % 100 == 0:
-                        log.info("Progress: %d ok=%d skip=%d fail=%d", count, ok, skip, fail)
-                    continue
-                if storage.blob_exists(bucket, record_id):
-                    processed.add(record_id)
-                    storage.save_progress(processed)
-                    skip += 1
-                    continue
-                for attempt in range(config.MAX_RETRIES):
-                    try:
-                        results_url = driver.current_url
-                        try:
-                            _, _, download_btn = next(
-                                (rid, t, b) for rid, t, b in scraper.get_records_with_downloads_on_page(driver)
-                                if rid == record_id
-                            )
-                        except StopIteration:
-                            log.warning("Record %s not found on page", record_id)
-                            break
-                        pdf_path = scraper.click_download_and_wait(
-                            driver, download_btn, download_dir, main_handle, results_url
-                        )
-                        if not pdf_path:
-                            fail += 1
-                            log.warning("No PDF downloaded: %s", record_id)
-                            break
-                        meta = metadata_lookup.get(record_id, {})
-                        storage.upload_to_gcs(bucket, pdf_path, record_id, title, metadata=meta or None)
-                        pdf_path.unlink(missing_ok=True)
-                        processed.add(record_id)
-                        storage.save_progress(processed)
-                        ok += 1
-                        log.info("[%d] Uploaded %s", count, title[:50] if title else record_id)
+            try:
+                records_iter = scraper.iterate_pages_with_records(driver)
+                for record_id, title, download_btn in records_iter:
+                    if session_lost:
+                        break
+                    if config.MAX_RECORDS and count >= config.MAX_RECORDS:
+                        log.info("Reached MAX_RECORDS=%d", config.MAX_RECORDS)
+                        break
+                    count += 1
+                    if record_id in processed:
+                        skip += 1
                         if count % 100 == 0:
-                            log.info("Progress: ok=%d skip=%d fail=%d", ok, skip, fail)
-                        break
-                    except InvalidSessionIdException:
-                        log.error("Browser session lost, stopping. Progress saved.")
-                        session_lost = True
-                        break
-                    except Exception as e:
-                        log.warning("Attempt %d failed for %s: %s", attempt + 1, record_id, e)
-                        if attempt == config.MAX_RETRIES - 1:
-                            fail += 1
-                            log.exception("Failed after retries: %s", record_id)
-                        else:
-                            driver.get(results_url)
-                            time.sleep(1)
-                time.sleep(config.DELAY_BETWEEN_RECORDS)
+                            log.info("Progress: %d ok=%d skip=%d fail=%d", count, ok, skip, fail)
+                        continue
+                    if storage.blob_exists(bucket, record_id):
+                        processed.add(record_id)
+                        storage.save_progress_add(record_id)
+                        skip += 1
+                        continue
+                    for attempt in range(config.MAX_RETRIES):
+                        try:
+                            results_url = driver.current_url
+                            if attempt == 0:
+                                download_btn_to_use = download_btn
+                            else:
+                                try:
+                                    _, _, download_btn_to_use = next(
+                                        (rid, t, b) for rid, t, b in scraper.get_records_with_downloads_on_page(driver)
+                                        if rid == record_id
+                                    )
+                                except StopIteration:
+                                    log.warning("Record %s not found on page", record_id)
+                                    break
+                            pdf_path = scraper.click_download_and_wait(
+                                driver, download_btn_to_use, download_dir, main_handle, results_url
+                            )
+                            if not pdf_path:
+                                fail += 1
+                                log.warning("No PDF downloaded: %s", record_id)
+                                break
+                            meta = metadata_lookup.get(record_id, {})
+                            storage.upload_to_gcs(bucket, pdf_path, record_id, title, metadata=meta or None)
+                            pdf_path.unlink(missing_ok=True)
+                            processed.add(record_id)
+                            storage.save_progress_add(record_id)
+                            ok += 1
+                            log.info("[%d] Uploaded %s", count, title[:50] if title else record_id)
+                            if count % 100 == 0:
+                                log.info("Progress: ok=%d skip=%d fail=%d", ok, skip, fail)
+                            break
+                        except InvalidSessionIdException:
+                            log.error("Browser session lost, stopping. Progress saved.")
+                            session_lost = True
+                            break
+                        except Exception as e:
+                            log.warning("Attempt %d failed for %s: %s", attempt + 1, record_id, e)
+                            if attempt == config.MAX_RETRIES - 1:
+                                fail += 1
+                                log.exception("Failed after retries: %s", record_id)
+                            else:
+                                driver.get(results_url)
+                                time.sleep(1)
+                    time.sleep(config.DELAY_BETWEEN_RECORDS)
+            except InvalidSessionIdException:
+                log.error("Browser session lost (browser closed?), stopping. Progress saved.")
+                session_lost = True
             log.info("Done. Uploaded=%d Skipped=%d Failed=%d%s", ok, skip, fail,
                      " (restart to continue)" if session_lost else "")
         finally:
@@ -206,6 +217,9 @@ def main():
 
     project = storage.get_project()
     log.info("Target: gs://%s (project: %s)", bucket_name, project or "default")
+    log.info("MAX_RECORDS=%s", config.MAX_RECORDS or "unlimited")
+    if config.START_RECORD:
+        log.info("START_RECORD=%d", config.START_RECORD)
 
     try:
         bucket = storage.get_bucket()

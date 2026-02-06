@@ -17,12 +17,14 @@ PAGE_WAIT = 10
 DOWNLOAD_WAIT = 60
 CHROME_PROFILE_DIR = os.environ.get("CHROME_PROFILE_DIR", "")
 
-# Pipeline
-DELAY_BETWEEN_RECORDS = 2
-DELAY_BETWEEN_RECORDS_PARALLEL = float(os.environ.get("DELAY_BETWEEN_RECORDS_PARALLEL", "0.5"))
+# Pipeline (increase if you get "too many requests")
+DELAY_BETWEEN_RECORDS = float(os.environ.get("DELAY_BETWEEN_RECORDS", "5"))
+DELAY_BETWEEN_RECORDS_PARALLEL = float(os.environ.get("DELAY_BETWEEN_RECORDS_PARALLEL", "2"))
+DELAY_BETWEEN_PAGES = float(os.environ.get("DELAY_BETWEEN_PAGES", "3"))
 MAX_RETRIES = 3
-MAX_RECORDS = int(os.environ.get("MAX_RECORDS", "0")) or None
+MAX_RECORDS = 20000
 WORKERS = int(os.environ.get("WORKERS", "1"))
+START_RECORD = int(os.environ.get("START_RECORD", "0")) or None  # e.g. 323 to skip first 322
 
 # GCS
 GCS_PREFIX = os.environ.get("GCS_PREFIX", "dtu_findit/master_thesis")

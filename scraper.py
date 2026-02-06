@@ -9,7 +9,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchWindowException
+from selenium.common.exceptions import NoSuchWindowException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -18,14 +18,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from config import (
     BASE_URL,
-    DELAY_BETWEEN_RECORDS,
-    DELAY_BETWEEN_RECORDS_PARALLEL,
+    DELAY_BETWEEN_PAGES,
     DOWNLOAD_WAIT,
     PAGE_WAIT,
     PER_PAGE,
     TARGET_URL,
     WAIT_TIMEOUT,
     CHROME_PROFILE_DIR,
+    START_RECORD,
 )
 
 log = logging.getLogger(__name__)
@@ -190,9 +190,23 @@ def extract_detail_urls_from_soup(soup) -> list[str]:
 
 def wait_for_results_list(driver):
     def has_result_links(d):
-        soup = BeautifulSoup(d.page_source, "html.parser")
-        return len(extract_detail_urls_from_soup(soup)) > 0
+        return bool(re.search(r'/en/catalog/[a-f0-9]{24}(?:"|\?|$)', (d.page_source or ""), re.I))
     WebDriverWait(driver, WAIT_TIMEOUT).until(has_result_links)
+
+
+def get_url_with_retry(driver, url: str, max_retries: int = 3):
+    for attempt in range(max_retries):
+        try:
+            driver.get(url)
+            return
+        except WebDriverException as e:
+            if "ERR_CONNECTION_RESET" in str(e) or "Connection reset" in str(e):
+                wait = 10 * (attempt + 1)
+                log.warning("Connection reset on %s, retry %d/%d in %ds", url[:50], attempt + 1, max_retries, wait)
+                time.sleep(wait)
+            else:
+                raise
+    raise WebDriverException("Connection reset after retries")
 
 
 def catalog_page_url(page: int) -> str:
@@ -227,8 +241,11 @@ def find_download_in_element(parent):
 
 def get_records_with_downloads_on_page(driver, catalog_ids: set[str] | None = None) -> list[tuple[str, str, object]]:
     """Return (record_id, title, btn) for main catalog records that have a download. If catalog_ids given, only those."""
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    main_ids = catalog_ids if catalog_ids is not None else set(extract_detail_urls_from_soup(soup))
+    if catalog_ids is not None:
+        main_ids = catalog_ids
+    else:
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        main_ids = set(extract_detail_urls_from_soup(soup))
     out = []
     seen = set()
     for a in driver.find_elements(By.CSS_SELECTOR, "a[href*='download-fulltext'], a[href*='fulltext']"):
@@ -297,22 +314,33 @@ def iterate_pages_with_records(driver, allowed_starts: set[int] | None = None):
         pages = [p for p in pages if 1 <= p <= 2000]
     else:
         pages = all_pages
+
+    if START_RECORD and START_RECORD > 1:
+        start_page = (START_RECORD - 1) // PER_PAGE + 1
+        skip_on_first = (START_RECORD - 1) % PER_PAGE
+        pages = [p for p in pages if p >= start_page]
+        if pages:
+            log.info("Starting from record ~%d (page %d, skip first %d on page)", START_RECORD, start_page, skip_on_first)
+    else:
+        skip_on_first = 0
+
     seen_ids = set()
-    delay = DELAY_BETWEEN_RECORDS_PARALLEL if allowed_starts else DELAY_BETWEEN_RECORDS
-    for page in pages:
-        url = catalog_page_url(page)
-        driver.get(url)
+    def load_page(url):
+        get_url_with_retry(driver, url)
         WebDriverWait(driver, PAGE_WAIT).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         time.sleep(3)
+
+    for page in pages:
+        url = catalog_page_url(page)
+        load_page(url)
         soup = BeautifulSoup(driver.page_source, "html.parser")
         records = extract_detail_urls_from_soup(soup)
         if not records:
             log.info("Page %d: empty (possible session expiry), re-login", page)
             handle_dtu_findit_entry(driver)
-            driver.get(url)
-            time.sleep(3)
+            load_page(url)
             soup = BeautifulSoup(driver.page_source, "html.parser")
             records = extract_detail_urls_from_soup(soup)
         catalog_ids = set(records)
@@ -320,31 +348,35 @@ def iterate_pages_with_records(driver, allowed_starts: set[int] | None = None):
         if not page_records and records:
             log.info("Page %d: no downloads (possible session expiry), re-login", page)
             handle_dtu_findit_entry(driver)
-            driver.get(url)
-            time.sleep(3)
+            load_page(url)
             page_records = get_records_with_downloads_on_page(driver, catalog_ids)
         if not page_records:
             log.warning("Page %d: no records with download found", page)
-        for record_id, title, btn in page_records:
+        for i, (record_id, title, btn) in enumerate(page_records):
+            if skip_on_first and page == start_page and i < skip_on_first:
+                continue
+            if skip_on_first and page == start_page:
+                skip_on_first = 0
             if record_id not in seen_ids:
                 seen_ids.add(record_id)
                 yield record_id, title, btn
         if not records or len(records) < PER_PAGE:
             break
-        time.sleep(delay)
+        time.sleep(DELAY_BETWEEN_PAGES)
 
 
 def wait_for_downloaded_pdf(download_dir: Path, timeout: int = DOWNLOAD_WAIT) -> Path | None:
+    poll_interval = 0.2
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         pdfs = list(download_dir.glob("*.pdf"))
         crdownload = list(download_dir.glob("*.crdownload"))
         if crdownload:
-            time.sleep(0.5)
+            time.sleep(poll_interval)
             continue
         if pdfs:
             return pdfs[0]
-        time.sleep(0.5)
+        time.sleep(poll_interval)
     log.warning("PDF download timed out after %ds", timeout)
     return None
 
@@ -356,7 +388,7 @@ def click_download_and_wait(driver, download_btn, download_dir: Path, main_handl
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", download_btn)
     except Exception:
         pass
-    time.sleep(0.3)
+    time.sleep(0.1)
     handles_before = set(driver.window_handles)
     try:
         download_btn.click()
@@ -380,5 +412,5 @@ def click_download_and_wait(driver, download_btn, download_dir: Path, main_handl
         pdf_path = wait_for_downloaded_pdf(download_dir)
         if results_url and driver.current_url != results_url:
             driver.get(results_url)
-            time.sleep(1)
+            time.sleep(0.5)
     return pdf_path
