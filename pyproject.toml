@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "bs4>=0.0.2",
-    "gcloud>=0.18.3",
+    "python-dotenv>=1.0.0",
+    "google-api-python-client>=2.189.0",
     "google-cloud-storage>=2.0.0",
     "matplotlib>=3.10.8",
     "numpy>=2.4.1",

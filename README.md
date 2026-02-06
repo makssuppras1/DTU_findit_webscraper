@@ -10,8 +10,58 @@ Enumerates all Master's thesis records on DTU Findit, downloads PDFs via the sit
 | `GCS_PREFIX` | No | Object key prefix (default: `dtu_findit/master_thesis`) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Yes* | Path to GCP service account JSON key |
 | `MAX_RECORDS` | No | Limit records (e.g. `10` for PoC); unset = all |
+| `CHROME_PROFILE_DIR` | No | Path to persist browser session (e.g. `./chrome_profile`); log in once, reuse on next runs |
+| `DTU_USERNAME` | No | DTU login (for auto-fill); **avoid storing in scripts** |
+| `DTU_PASSWORD` | No | DTU password (for auto-fill); **security risk** – use only in env, never commit |
 
 \* Or use `gcloud auth application-default login` for local runs.
+
+### Using a .env file
+
+Copy the example and edit:
+
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+The script loads `.env` automatically. `.env` is gitignored; never commit it.
+
+### Avoiding manual login
+
+**Option 1 – Session persistence (recommended, fastest):** Use a Chrome profile so the browser remembers your session. Log in once; subsequent runs skip the entire login flow:
+```bash
+export CHROME_PROFILE_DIR=./chrome_profile
+uv run python main.py
+```
+Log in manually the first time. Future runs reuse the saved session. Add `chrome_profile/` to `.gitignore` (already done).
+
+**Test login only:** Run `uv run python test_login.py` to test the login flow in isolation. Browser stays open until you press Enter.
+
+**Option 2 – Auto-fill credentials:** Set `DTU_USERNAME` and `DTU_PASSWORD` in `.env`. The script will:
+1. Click "I am not a robot"
+2. Click "Allow selected" on the cookie pop-up
+3. Click "Log in as DTU user"
+4. Fill username/password and submit
+
+This may not work if DTU uses 2FA (MitID) or changes the form. **Do not store passwords in code or config files.**
+
+`DTU_USERNAME` is usually your DTU email or student/employee ID (e.g. `s123456`).
+
+### GCS not working?
+
+1. **"Could not automatically determine credentials"**  
+   Set `GOOGLE_APPLICATION_CREDENTIALS` to the path of your service account JSON:
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/your-service-account.json
+   ```
+   Or run `gcloud auth application-default login` (uses your user account).
+
+2. **"403 Forbidden" / "Permission denied"**  
+   Your service account needs `Storage Object Admin` or `Storage Object Creator` on the bucket. In GCP Console: Bucket → Permissions → Add principal → add your service account.
+
+3. **"404 Not Found"**  
+   Check the bucket name (e.g. `thesis_archive_bucket`) and that it exists in your project.
 
 ## How to Run
 
@@ -45,23 +95,21 @@ To start fresh, delete `progress.json`.
 ## GCS Output Layout
 
 ```
-gs://<bucket>/<GCS_PREFIX>/<record_id>.pdf
+gs://<bucket>/<GCS_PREFIX>/<record_id>_<thesis_title>.pdf
 ```
 
-Example: `gs://my-bucket/dtu_findit/master_thesis/697c04de6e5c71c3975b93f4.pdf`
+Example: `gs://my-bucket/dtu_findit/master_thesis/697c04de6e5c71c3975b93f4_Towards Early Detection of Children.pdf`
+
+The thesis title is sanitized for filenames (special chars removed, max 120 chars). The record_id prefix ensures uniqueness.
 
 ## DTU Findit Selectors
 
-The Download button is located using these strategies (in order). Update `find_download_button()` in `main.py` if the UI changes:
+Downloads are triggered from the **results page** (no navigation to detail pages). For each result row, the script finds the Download link within that row and clicks it. If the click opens a new tab, the script switches to it, waits for the PDF download, closes the tab, and continues.
 
-1. Link with exact text "Download"
-2. Link with partial text "download"
-3. Link with text containing "download" (case-insensitive)
-4. Link with `href` containing `.pdf`
-5. Link with `href` containing `fulltext-gateway` (DTU fulltext gateway)
-6. Link with class containing "download"
-7. Button with text containing "download"
+**Download link** (within each result row): `find_download_in_element()` looks for links with text "Download", `href` containing `.pdf` or `fulltext-gateway`, or class containing "download".
 
-Record IDs are extracted from URLs: `/en/catalog/<record_id>` (e.g. `697c04de6e5c71c3975b93f4`).
+**Result row**: Ancestor of the catalog link with class containing `document`, `result`, `item`, or `row`.
 
-Pagination uses the `start` query parameter (Blacklight/Solr style): `start=0`, `start=20`, etc.
+Record IDs are extracted from URLs: `/en/catalog/<record_id>`.
+
+Pagination uses the `start` query parameter: `start=0`, `start=20`, etc.

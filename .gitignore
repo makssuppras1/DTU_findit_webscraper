@@ -16,6 +16,21 @@ env/
 
 # Project outputs and state
 progress.json
+chrome_profile/
+chrome_profile_*/
+
+# Cache, debug, temp
+cache/
+.cache/
+*.crdownload
+debug_*.html
+*.tmp
+*.temp
+
+# Credentials (never commit)
+.env
+.env.local
+*dtu*credentials*
 test_output.csv
 detail_urls.json
 

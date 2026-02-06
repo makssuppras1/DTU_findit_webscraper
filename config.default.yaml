@@ -1,0 +1,28 @@
+# Default configuration. Override with environment variables.
+# Use .env for secrets (GCS_BUCKET, DTU_USERNAME, DTU_PASSWORD, etc.)
+
+# DTU Findit
+target_url: "https://findit.dtu.dk/en/catalog?dtu=student_theses&q=&type=thesis_master"
+base_url: "https://findit.dtu.dk"
+per_page: 10
+
+# Browser
+wait_timeout: 120
+page_wait: 10
+download_wait: 60
+chrome_profile_dir: ""
+
+# Pipeline
+delay_between_records: 2
+delay_between_records_parallel: 0.5
+max_retries: 3
+max_records: 0
+workers: 1
+
+# GCS
+gcs_prefix: "dtu_findit/master_thesis"
+progress_file: "progress.json"
+
+# Metadata (optional)
+fulltext_token: ""
+metadata_csv_pages: 20
