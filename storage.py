@@ -4,11 +4,13 @@ import json
 import logging
 import os
 import re
+import time
 from pathlib import Path
 
+from google.api_core.exceptions import RetryError
 from google.cloud import storage
 
-from config import GCS_PREFIX, PROGRESS_FILE
+from config import GCS_PREFIX, GCS_UPLOAD_TIMEOUT, PROGRESS_FILE
 
 log = logging.getLogger(__name__)
 
@@ -126,7 +128,17 @@ def upload_to_gcs(bucket, local_path: Path, record_id: str, title: str = "", met
     blob = bucket.blob(key)
     if metadata:
         blob.metadata = _gcs_metadata(metadata)
-    blob.upload_from_filename(str(local_path), content_type="application/pdf")
+    for attempt in range(3):
+        try:
+            blob.upload_from_filename(str(local_path), content_type="application/pdf", timeout=GCS_UPLOAD_TIMEOUT)
+            return
+        except (RetryError, ConnectionError, OSError) as e:
+            if attempt < 2:
+                wait = 30 * (attempt + 1)
+                log.warning("GCS upload attempt %d failed for %s: %s. Retry in %ds", attempt + 1, record_id, e, wait)
+                time.sleep(wait)
+            else:
+                raise
 
 
 def sync_progress_with_bucket():

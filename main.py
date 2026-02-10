@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from bs4 import BeautifulSoup
-from selenium.common.exceptions import InvalidSessionIdException
+from selenium.common.exceptions import InvalidSessionIdException, StaleElementReferenceException
 
 import config
 import metadata
@@ -86,13 +86,22 @@ def _run_worker(args):
                     except InvalidSessionIdException:
                         log.error("Worker %d: browser session lost", worker_id)
                         raise
+                    except StaleElementReferenceException:
+                        log.warning("Worker %d: stale element for %s, retrying", worker_id, record_id)
+                        if attempt < config.MAX_RETRIES - 1:
+                            driver.get(results_url)
+                            scraper.wait_for_results_list(driver)
+                            time.sleep(2)
+                        else:
+                            fail += 1
                     except Exception as e:
                         log.warning("Worker %d attempt %d failed for %s: %s", worker_id, attempt + 1, record_id, e)
                         if attempt == config.MAX_RETRIES - 1:
                             fail += 1
                         else:
                             driver.get(results_url)
-                            time.sleep(1)
+                            scraper.wait_for_results_list(driver)
+                            time.sleep(2)
                 time.sleep(config.DELAY_BETWEEN_RECORDS_PARALLEL)
         finally:
             try:
@@ -174,6 +183,14 @@ def _run_main_single(bucket, metadata_lookup):
                             log.error("Browser session lost, stopping. Progress saved.")
                             session_lost = True
                             break
+                        except StaleElementReferenceException:
+                            log.warning("Stale element for %s, retrying", record_id)
+                            if attempt < config.MAX_RETRIES - 1:
+                                driver.get(results_url)
+                                scraper.wait_for_results_list(driver)
+                                time.sleep(2)
+                            else:
+                                fail += 1
                         except Exception as e:
                             log.warning("Attempt %d failed for %s: %s", attempt + 1, record_id, e)
                             if attempt == config.MAX_RETRIES - 1:
@@ -181,7 +198,8 @@ def _run_main_single(bucket, metadata_lookup):
                                 log.exception("Failed after retries: %s", record_id)
                             else:
                                 driver.get(results_url)
-                                time.sleep(1)
+                                scraper.wait_for_results_list(driver)
+                                time.sleep(2)
                     time.sleep(config.DELAY_BETWEEN_RECORDS)
             except InvalidSessionIdException:
                 log.error("Browser session lost (browser closed?), stopping. Progress saved.")
@@ -219,7 +237,7 @@ def main():
     log.info("Target: gs://%s (project: %s)", bucket_name, project or "default")
     log.info("MAX_RECORDS=%s", config.MAX_RECORDS or "unlimited")
     if config.START_RECORD:
-        log.info("START_RECORD=%d", config.START_RECORD)
+        log.info("START_RECORD=%d (page %d)", config.START_RECORD, (config.START_RECORD - 1) // config.PER_PAGE + 1)
 
     try:
         bucket = storage.get_bucket()

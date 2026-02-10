@@ -9,7 +9,7 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchWindowException, WebDriverException
+from selenium.common.exceptions import NoSuchWindowException, StaleElementReferenceException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -18,6 +18,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from config import (
     BASE_URL,
+    CONNECTION_RETRIES,
     DELAY_BETWEEN_PAGES,
     DOWNLOAD_WAIT,
     PAGE_WAIT,
@@ -194,15 +195,22 @@ def wait_for_results_list(driver):
     WebDriverWait(driver, WAIT_TIMEOUT).until(has_result_links)
 
 
-def get_url_with_retry(driver, url: str, max_retries: int = 3):
+def get_url_with_retry(driver, url: str, max_retries: int | None = None):
+    max_retries = max_retries or CONNECTION_RETRIES
+    retriable = (
+        "ERR_CONNECTION_RESET", "Connection reset", "ERR_CONNECTION_REFUSED",
+        "ERR_CONNECTION_CLOSED", "ERR_NETWORK_CHANGED", "ERR_EMPTY_RESPONSE",
+        "Connection refused", "Connection aborted", "ProtocolError",
+    )
     for attempt in range(max_retries):
         try:
             driver.get(url)
             return
-        except WebDriverException as e:
-            if "ERR_CONNECTION_RESET" in str(e) or "Connection reset" in str(e):
-                wait = 10 * (attempt + 1)
-                log.warning("Connection reset on %s, retry %d/%d in %ds", url[:50], attempt + 1, max_retries, wait)
+        except (WebDriverException, OSError) as e:
+            msg = str(e)
+            if any(phrase in msg for phrase in retriable):
+                wait = min(15 * (2 ** attempt), 120)
+                log.warning("Connection error on %s, retry %d/%d in %ds", url[:60], attempt + 1, max_retries, wait)
                 time.sleep(wait)
             else:
                 raise
@@ -325,6 +333,9 @@ def iterate_pages_with_records(driver, allowed_starts: set[int] | None = None):
         skip_on_first = 0
 
     seen_ids = set()
+    consecutive_load_failures = 0
+    MAX_CONSECUTIVE_LOAD_FAILURES = 3
+
     def load_page(url):
         get_url_with_retry(driver, url)
         WebDriverWait(driver, PAGE_WAIT).until(
@@ -334,21 +345,46 @@ def iterate_pages_with_records(driver, allowed_starts: set[int] | None = None):
 
     for page in pages:
         url = catalog_page_url(page)
-        load_page(url)
+        try:
+            load_page(url)
+        except WebDriverException as e:
+            if "Connection reset after retries" in str(e) or "Connection" in str(e):
+                consecutive_load_failures += 1
+                log.warning("Page %d: connection failed after retries, skipping (%d/%d)", page, consecutive_load_failures, MAX_CONSECUTIVE_LOAD_FAILURES)
+                if consecutive_load_failures >= MAX_CONSECUTIVE_LOAD_FAILURES:
+                    log.warning("Too many consecutive connection failures, stopping. Restart to resume.")
+                    break
+                time.sleep(30)
+                continue
+            raise
+        consecutive_load_failures = 0
+
         soup = BeautifulSoup(driver.page_source, "html.parser")
         records = extract_detail_urls_from_soup(soup)
         if not records:
             log.info("Page %d: empty (possible session expiry), re-login", page)
-            handle_dtu_findit_entry(driver)
-            load_page(url)
+            try:
+                handle_dtu_findit_entry(driver)
+                load_page(url)
+            except WebDriverException:
+                consecutive_load_failures += 1
+                if consecutive_load_failures >= MAX_CONSECUTIVE_LOAD_FAILURES:
+                    break
+                continue
             soup = BeautifulSoup(driver.page_source, "html.parser")
             records = extract_detail_urls_from_soup(soup)
         catalog_ids = set(records)
         page_records = get_records_with_downloads_on_page(driver, catalog_ids)
         if not page_records and records:
             log.info("Page %d: no downloads (possible session expiry), re-login", page)
-            handle_dtu_findit_entry(driver)
-            load_page(url)
+            try:
+                handle_dtu_findit_entry(driver)
+                load_page(url)
+            except WebDriverException:
+                consecutive_load_failures += 1
+                if consecutive_load_failures >= MAX_CONSECUTIVE_LOAD_FAILURES:
+                    break
+                continue
             page_records = get_records_with_downloads_on_page(driver, catalog_ids)
         if not page_records:
             log.warning("Page %d: no records with download found", page)
@@ -386,14 +422,21 @@ def click_download_and_wait(driver, download_btn, download_dir: Path, main_handl
         f.unlink(missing_ok=True)
     try:
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", download_btn)
+    except StaleElementReferenceException:
+        raise
     except Exception:
         pass
     time.sleep(0.1)
     handles_before = set(driver.window_handles)
     try:
         download_btn.click()
+    except StaleElementReferenceException:
+        raise
     except Exception:
-        driver.execute_script("arguments[0].click();", download_btn)
+        try:
+            driver.execute_script("arguments[0].click();", download_btn)
+        except StaleElementReferenceException:
+            raise
     time.sleep(1)
     handles_after = set(driver.window_handles)
     new_handles = handles_after - handles_before
