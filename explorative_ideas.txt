@@ -1,0 +1,21 @@
+Semantic exploration ideas for 6000 theses using embeddings (e.g., all-MiniLM-L6-v2):
+
+1. Semantic clustering: Embed thesis abstracts or full texts and apply clustering (K-means, HDBSCAN, agglomerative clustering) to identify major research topics and subfields. After clustering, extract representative keywords using TF-IDF to interpret clusters. Insights: dominant research areas, subtopics, interdisciplinary clusters.
+
+2. 2D semantic map: Use dimensionality reduction (UMAP, t-SNE, PCA) on embeddings to visualize the thesis landscape in 2D. Inspect whether topics form distinct regions, where disciplines overlap, and where interdisciplinary bridges occur.
+
+3. Nearest-neighbor analysis: Compute cosine similarity between embeddings and retrieve the top-k nearest neighbors for each thesis. Useful for identifying highly similar theses, duplicates, clusters of related research, and measuring similarity distributions across departments or fields.
+
+4. Outlier detection: Identify theses far from others in embedding space using distance-to-centroid, Local Outlier Factor, or Isolation Forest. These may represent rare topics, novel interdisciplinary work, or incorrectly labeled theses.
+
+5. Topic evolution over time: If year metadata exists, cluster the theses and compute cluster frequencies per year. Track how research themes grow, decline, or emerge. Alternatively compute centroid embeddings per year to observe semantic drift of research focus.
+
+6. Department similarity: Compute centroid embeddings for departments or faculties and compare them with cosine similarity. This reveals which departments produce semantically similar research and highlights interdisciplinary relationships.
+
+7. Cluster keyword extraction: For each cluster, aggregate thesis text and compute TF-IDF or keyword statistics to summarize the cluster. This helps convert embedding clusters into interpretable research topics.
+
+8. Similarity graph analysis: Build a graph where nodes are theses and edges represent similarity above a threshold. Analyze network properties such as degree centrality, PageRank, and community detection to find central theses and major thematic communities.
+
+9. Semantic search: Store embeddings in a vector database (e.g., FAISS, Chroma, Qdrant) and enable semantic queries like “optimization in transportation networks” or “machine learning for climate modeling” to retrieve the most relevant theses.
+
+10. Interdisciplinarity score: Measure how spread a thesis is across clusters or neighbor groups. Possible metrics include entropy of neighbor clusters or similarity to multiple cluster centroids. High values may indicate interdisciplinary research.
