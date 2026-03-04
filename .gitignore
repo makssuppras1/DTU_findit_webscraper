@@ -16,6 +16,9 @@ env/
 
 # Project outputs and state
 progress.json
+out_sections/
+data/
+logs/
 chrome_profile/
 chrome_profile_*/
 

@@ -113,3 +113,59 @@ Downloads are triggered from the **results page** (no navigation to detail pages
 Record IDs are extracted from URLs: `/en/catalog/<record_id>`.
 
 Pagination uses the `start` query parameter: `start=0`, `start=20`, etc.
+
+---
+
+## Thesis section extractor
+
+Reads PDFs from GCS, extracts text (PDF first, OCR fallback when needed), detects section headings from config-driven aliases, and writes one section-based JSON per PDF.
+
+### Install
+
+From repo root:
+
+```bash
+uv sync
+uv pip install -e .
+```
+
+### Run (single command)
+
+```bash
+python -m thesis_extractor run --config config.yaml
+```
+
+Optional: `--limit N` to process only the first N PDFs (overrides `config.yaml`).
+
+### Config
+
+Copy `config.example.yaml` to `config.yaml` and edit. Keys:
+
+- **gcs**: `bucket`, `prefix` (where to list PDFs)
+- **output**: `target` (`local` or `gcs`), `local_dir` or `gcs_bucket`/`gcs_prefix`
+- **runtime**: `workers`, `limit` (0 = no limit), `resume`, `log_file`
+- **extraction**: `ocr_min_chars`, `ocr_dpi`, `ocr_lang`, `max_pages`, etc.
+- **sectioning**: `canonical_sections`, `heading_aliases`, `fuzzy_match`, `fuzzy_threshold`
+
+### Dependencies
+
+- **GCS:** `GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default login`
+- **Tesseract:** Required for OCR fallback — install system-wide (e.g. `brew install tesseract` on macOS)
+
+### Output
+
+One JSON per PDF: `doc_id`, `source`, `page_count`, `stats` (ocr_pages, runtime_sec), `sections` (canonical → text, start_page, end_page, headings), `unknown_sections`. Resume: existing output files are skipped.
+
+### Repo layout
+
+- `config.yaml` — extractor config (use `config.example.yaml` as template)
+- `src/thesis_extractor/` — extractor package (config, cli, pipeline, gcs_io, extract, sectioning, utils)
+- Scraper (DTU Findit → GCS): `main.py`, `storage.py`, `scraper.py`, root `config.py`
+- Deprecated code: `legacy/` (see `legacy/README.md`)
+
+### Tests
+
+```bash
+uv pip install -e .
+python -m unittest tests.test_thesis_extractor -v
+```

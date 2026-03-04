@@ -31,6 +31,7 @@ START_RECORD = ((_start_page - 1) * PER_PAGE + 1) if _start_page else _start_rec
 
 # GCS
 GCS_PREFIX = os.environ.get("GCS_PREFIX", "dtu_findit/master_thesis")
+GCS_PARQUET_PREFIX = os.environ.get("GCS_PARQUET_PREFIX", "dtu_findit/master_thesis_meta")  # folder for thesis_meta_combined.parquet; set to upload
 GCS_UPLOAD_TIMEOUT = int(os.environ.get("GCS_UPLOAD_TIMEOUT", "300"))
 PROGRESS_FILE = os.environ.get("PROGRESS_FILE", "progress.json")
 

@@ -123,6 +123,12 @@ def _gcs_metadata(meta: dict) -> dict:
     return out
 
 
+def upload_file(bucket, local_path: Path, blob_key_path: str, content_type: str = "application/octet-stream"):
+    """Upload a file to GCS at the given key (path)."""
+    blob = bucket.blob(blob_key_path)
+    blob.upload_from_filename(str(local_path), content_type=content_type, timeout=GCS_UPLOAD_TIMEOUT)
+
+
 def upload_to_gcs(bucket, local_path: Path, record_id: str, title: str = "", metadata: dict | None = None):
     key = blob_key(record_id, title)
     blob = bucket.blob(key)

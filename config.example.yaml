@@ -1,0 +1,55 @@
+# Thesis section extractor – copy to config.yaml and edit.
+
+gcs:
+  bucket: thesis_archive_bucket
+  prefix: dtu_findit/master_thesis/
+
+output:
+  target: local
+  local_dir: data/sections_json
+  gcs_bucket: thesis_archive_bucket
+  gcs_prefix: dtu_findit/master_thesis_sections_json/
+
+runtime:
+  workers: 2
+  limit: 0
+  resume: true
+  log_file: logs/extract.log
+
+extraction:
+  prefer_pdf_text: true
+  ocr_fallback: true
+  ocr_dpi: 300
+  ocr_lang: eng
+  ocr_min_chars: 50
+  max_pages: 0
+
+sectioning:
+  canonical_sections:
+    - abstract
+    - introduction
+    - background
+    - related_work
+    - methodology
+    - implementation
+    - experiments
+    - results
+    - discussion
+    - conclusion
+    - future_work
+    - references
+  heading_aliases:
+    abstract: ["abstract", "summary"]
+    introduction: ["introduction"]
+    background: ["background", "preliminaries"]
+    related_work: ["related work", "literature review"]
+    methodology: ["methodology", "methods", "materials and methods", "approach"]
+    implementation: ["implementation", "system design"]
+    experiments: ["experiments", "experimental setup", "evaluation setup"]
+    results: ["results", "findings"]
+    discussion: ["discussion"]
+    conclusion: ["conclusion", "conclusions", "concluding remarks"]
+    future_work: ["future work", "limitations and future work"]
+    references: ["references", "bibliography"]
+  fuzzy_match: true
+  fuzzy_threshold: 85

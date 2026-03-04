@@ -1,0 +1,50 @@
+{
+  "doc_id": "2893f8875b3620059c6d07a37bb5d4415daeaf31",
+  "source_blob": "dtu_findit/master_thesis/example_thesis.pdf",
+  "page_count": 50,
+  "extraction_stats": {
+    "page_count": 50,
+    "ocr_page_count": 2,
+    "total_chars": 125000
+  },
+  "sections": {
+    "introduction": {
+      "canonical_name": "introduction",
+      "raw_heading": "1 Introduction",
+      "raw_headings": ["1 Introduction"],
+      "text": "This thesis presents the problem and motivation. It spans multiple pages so this text is concatenated from page 1 through page 3.",
+      "start_page": 0,
+      "end_page": 2,
+      "confidence": 100.0
+    },
+    "methodology": {
+      "canonical_name": "methodology",
+      "raw_heading": "2 Methods",
+      "raw_headings": ["2 Methods"],
+      "text": "We used PyMuPDF for extraction and Tesseract as fallback.",
+      "start_page": 3,
+      "end_page": 5,
+      "confidence": 100.0
+    },
+    "conclusion": {
+      "canonical_name": "conclusion",
+      "raw_heading": "5 Conclusion",
+      "raw_headings": ["5 Conclusion", "5.1 Concluding Remarks"],
+      "text": "We have shown that the pipeline works. Concluding remarks follow.",
+      "start_page": 10,
+      "end_page": 11,
+      "confidence": 95.0
+    }
+  },
+  "unknown_sections": [
+    {
+      "canonical_name": "3 Related Work",
+      "raw_heading": "3 Related Work",
+      "raw_headings": ["3 Related Work"],
+      "text": "Prior work includes...",
+      "start_page": 6,
+      "end_page": 6,
+      "confidence": 65.0
+    }
+  ]
+}
