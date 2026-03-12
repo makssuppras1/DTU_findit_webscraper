@@ -1,0 +1,34 @@
+{
+  "professor_identity": {
+    "input_id": "row_0",
+    "canonical_name": "feragen, aasa",
+    "orcid": null,
+    "email": "afhar@dtu.dk",
+    "department": "department of applied mathematics and computer science",
+    "institution": "DTU",
+    "profile_url": "https://orbit.dtu.dk/en/persons/aasa-feragen/",
+    "orbit_id": null
+  },
+  "candidate_source_profiles": [],
+  "publications": [],
+  "unmatched_or_uncertain": [
+    {
+      "raw_record_ref": "",
+      "reason": "no_source_profiles",
+      "source": ""
+    }
+  ],
+  "retrieval_meta": {
+    "retrieval_run_id": "run_20260312_105451",
+    "retrieved_at_iso": "2026-03-12T10:54:51Z",
+    "config_scope": [
+      "book_chapter",
+      "journal_article",
+      "thesis",
+      "conference_paper",
+      "book"
+    ],
+    "pipeline_version": "0.1.0",
+    "failed_sources": []
+  }
+}

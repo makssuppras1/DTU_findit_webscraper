@@ -1,5 +1,5 @@
 """Enrich thesis_meta_combined.csv with abstracts from GCS extracted_metadata.json.
-Left-joins on Title. Run with GCS_BUCKET set (e.g. thesis_archive_bucket).
+Joins on member_id_ss (ID from filename, e.g. 5d1c8d66d9001d146569a4a4). Run with GCS_BUCKET set.
 """
 import csv
 import json
@@ -22,7 +22,7 @@ def get_bucket():
 
 
 def load_extracted_metadata(bucket, path: str = "extracted_data/extracted_metadata.json") -> dict[str, str]:
-    """Download JSON and build title -> abstract map. Normalize title (strip, single spaces)."""
+    """Download JSON and build member_id -> abstract map. ID = filename before first '_'."""
     blob = bucket.blob(path)
     raw = blob.download_as_bytes().decode("utf-8", errors="replace")
     data = json.loads(raw)
@@ -33,28 +33,15 @@ def load_extracted_metadata(bucket, path: str = "extracted_data/extracted_metada
     for item in items:
         if not isinstance(item, dict):
             continue
-        title = item.get("title") or item.get("Title")
+        filename = item.get("filename") or ""
         abstract = item.get("abstract") or item.get("abstract_ts") or item.get("Abstract")
-        if title and abstract:
-            key = " ".join(str(title).split()).strip()
-            if key and key not in out:
-                out[key] = str(abstract).strip()
+        if not abstract:
+            continue
+        if "_" in filename:
+            member_id = filename.split("_", 1)[0].strip()
+            if member_id and member_id not in out:
+                out[member_id] = str(abstract).strip()
     return out
-
-
-def normalize_title(s: str) -> str:
-    return " ".join(s.split()).strip() if s else ""
-
-
-def csv_title_to_lookup_keys(title: str) -> list[str]:
-    """Produce keys to look up in the JSON map. Prefer part before '|' (bilingual CSV)."""
-    n = normalize_title(title)
-    if not n:
-        return []
-    keys = [n]
-    if "|" in n:
-        keys.insert(0, normalize_title(n.split("|", 1)[0]))
-    return keys
 
 
 def main():
@@ -64,32 +51,29 @@ def main():
 
     bucket = get_bucket()
     print("Loading extracted_metadata.json from GCS...", file=sys.stderr)
-    title_to_abstract = load_extracted_metadata(bucket)
-    print(f"Loaded {len(title_to_abstract)} title->abstract entries.", file=sys.stderr)
+    id_to_abstract = load_extracted_metadata(bucket)
+    print(f"Loaded {len(id_to_abstract)} member_id->abstract entries.", file=sys.stderr)
 
     with open(csv_path, "r", encoding="utf-8", newline="") as f:
         reader = csv.reader(f, delimiter=";")
         header = next(reader)
         rows = list(reader)
 
-    if "Title" not in header or "abstract_ts" not in header:
-        raise SystemExit("CSV must have columns 'abstract_ts' and 'Title'.")
+    if "abstract_ts" not in header or "member_id_ss" not in header:
+        raise SystemExit("CSV must have columns 'abstract_ts' and 'member_id_ss'.")
     idx_abstract = header.index("abstract_ts")
-    idx_title = header.index("Title")
+    idx_member_id = header.index("member_id_ss")
 
-    filled = 0
+    replaced = 0
     for row in rows:
-        if len(row) <= max(idx_abstract, idx_title):
+        if len(row) <= max(idx_abstract, idx_member_id):
             continue
-        if row[idx_abstract].strip():
-            continue
-        for key in csv_title_to_lookup_keys(row[idx_title]):
-            if key in title_to_abstract:
-                row[idx_abstract] = title_to_abstract[key]
-                filled += 1
-                break
+        member_id = row[idx_member_id].strip()
+        if member_id and member_id in id_to_abstract:
+            row[idx_abstract] = id_to_abstract[member_id]
+            replaced += 1
 
-    print(f"Filled {filled} missing abstracts.", file=sys.stderr)
+    print(f"Replaced abstract for {replaced} rows (from metadata).", file=sys.stderr)
 
     with open(csv_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, delimiter=";")

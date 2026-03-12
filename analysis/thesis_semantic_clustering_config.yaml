@@ -1,0 +1,30 @@
+# Thesis semantic clustering — config
+# Run: uv run python analysis/thesis_semantic_clustering.py
+# Override config: uv run python analysis/thesis_semantic_clustering.py --config path/to/config.yaml
+
+# Data
+data_path: "Thesis_meta/thesis_meta_combined_filtered.csv"
+sample_size: null   # null = use all rows; set to e.g. 500 for quick runs
+
+# Embeddings
+# Use the same name you passed to: uv run python analysis/download_embedding_model.py --model <name>
+# e.g. all-MiniLM-L6-v2 (small), all-mpnet-base-v2 or multi-qa-mpnet-base-dot-v1 (better). Script uses local cache only when possible.
+embedding_model: "sentence-transformers/all-mpnet-base-v2"   # must match model in local HF cache
+recompute_embeddings: true
+
+# Clustering
+cluster_method: "hdbscan"   # hdbscan | kmeans | agg
+n_clusters: 25              # used when cluster_method is kmeans or agg
+
+# t-SNE (slow on 6k+ points). One value = one run; [] = skip t-SNE. [5,10,20,30,50] = 5 runs (very slow).
+tsne_perplexities: [30]
+
+# Full text from GCS (optional; false = use abstracts only)
+use_fulltext_gcs: true
+fulltext_bucket: "thesis_archive_bucket"
+fulltext_prefix: "dtu_findit/master_thesis_markdown"
+
+# Department / faculty column (Department_new)
+use_department_gcs: true
+department_csv_gcs: "dtu_findit/master_thesis_meta/thesis_meta_combined_department.csv"
+department_csv_local: "Thesis_meta/thesis_meta_combined_department.csv"   # used if file exists and Department_new not in data

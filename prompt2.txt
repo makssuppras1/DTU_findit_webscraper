@@ -1,0 +1,9 @@
+I've reviewed the professor publication retrieval pipeline in src/publication_retrieval/. It currently retrieves and stores only metadata (title, year, venue, authors, identifiers, provenance) per publication—no full text.
+
+Add a full-text retrieval and storage layer that:
+1. Uses the canonical retrieval output (publication list with DOI/IDs per professor) as input.
+2. For each publication, attempts to obtain full text or abstract where legally/technically feasible (e.g. OpenAlex OA URLs, Unpaywall, or abstract from APIs that provide it).
+3. Stores the result (full text or abstract, or a flag that none was obtained) with provenance (source URL, retrieval timestamp, method).
+4. Keeps the existing metadata pipeline unchanged; full-text is an optional, separate stage or field.
+
+Preserve precision and provenance. Do not add embeddings or RAG—only retrieval and storage of text.

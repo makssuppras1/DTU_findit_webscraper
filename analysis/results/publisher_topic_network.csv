@@ -1,0 +1,121 @@
+source,target,shared_clusters,cosine_similarity
+DTU Compute,DTU Management,28,0.691892
+DTU Compute,DTU Electro,26,0.718253
+DTU Construct,DTU Sustain,25,0.570594
+DTU Construct,DTU Management,23,0.642339
+DTU Construct,DTU Electro,23,0.504494
+DTU Compute,DTU Construct,22,0.511664
+DTU Management,DTU Sustain,21,0.605764
+DTU Construct,DTU Wind,17,0.456988
+DTU Management,DTU Wind,16,0.234282
+DTU Electro,DTU Management,16,0.622473
+DTU Compute,DTU Health Tech,15,0.466163
+DTU Construct,DTU Health Tech,15,0.345992
+DTU Electro,DTU Health Tech,15,0.418368
+DTU Electro,DTU Wind,15,0.250724
+DTU Compute,DTU Sustain,14,0.554667
+DTU Electro,DTU Physics,13,0.607176
+DTU Compute,DTU Wind,12,0.178478
+DTU Compute,DTU Engineering Technology,12,0.71521
+DTU Chemical Engineering,DTU Sustain,12,0.618119
+DTU Chemical Engineering,DTU Construct,12,0.547185
+DTU Bioengineering,DTU Health Tech,11,0.539346
+DTU Health Tech,DTU Management,11,0.436345
+DTU Electro,DTU Energy,11,0.1984
+DTU Sustain,DTU Wind,11,0.15562
+DTU Bioengineering,DTU Food,10,0.725165
+DTU Bioengineering,DTU Chemical Engineering,10,0.703159
+DTU Electro,DTU Sustain,10,0.505236
+DTU Engineering Technology,DTU Management,10,0.725147
+DTU Food,DTU Health Tech,9,0.464186
+DTU Construct,DTU Physics,9,0.4734
+DTU Space,DTU Sustain,9,0.380795
+DTU Aqua,DTU Sustain,9,0.301332
+DTU Electro,DTU Space,9,0.428282
+DTU Chemical Engineering,DTU Energy,9,0.283073
+DTU Chemical Engineering,DTU Food,9,0.624512
+DTU Health Tech,DTU Physics,8,0.556823
+DTU Construct,DTU Energy,8,0.1918
+DTU Compute,DTU Space,8,0.404321
+DTU Energy,DTU Physics,8,0.43484
+DTU Construct,DTU Space,8,0.317687
+DTU Chemical Engineering,DTU Chemistry,8,0.377897
+DTU Chemical Engineering,DTU Electro,8,0.58287
+DTU Engineering Technology,DTU Sustain,7,0.521736
+DTU Management,DTU Space,7,0.400047
+DTU Chemical Engineering,DTU Compute,7,0.624254
+DTU Chemical Engineering,DTU Management,7,0.64303
+DTU Aqua,DTU Construct,7,0.238316
+DTU Construct,DTU Engineering Technology,6,0.479089
+DTU Aqua,DTU Management,6,0.296666
+DTU Food,DTU Sustain,6,0.488684
+DTU Chemical Engineering,DTU Physics,6,0.617416
+DTU Energy,DTU Wind,6,0.060092
+DTU Bioengineering,DTU Electro,6,0.614357
+DTU Chemical Engineering,DTU Wind,6,0.169094
+DTU Bioengineering,DTU Compute,6,0.656646
+DTU Construct,DTU Food,5,0.448688
+DTU Compute,DTU Physics,5,0.575436
+DTU Electro,DTU Engineering Technology,5,0.559642
+DTU Space,DTU Wind,5,0.104252
+DTU Management,DTU Physics,5,0.591285
+DTU Health Tech,DTU Sustain,5,0.354196
+DTU Aqua,DTU Electro,5,0.265896
+DTU Engineering Technology,DTU Health Tech,5,0.365324
+DTU Engineering Technology,DTU Space,5,0.363504
+DTU Food,DTU Management,5,0.568567
+DTU Bioengineering,DTU Physics,5,0.629417
+DTU Energy,DTU Health Tech,4,0.187045
+DTU Energy,DTU Management,4,0.207689
+DTU Energy,DTU Sustain,4,0.183084
+DTU Food,DTU Physics,4,0.515338
+DTU Aqua,DTU Compute,4,0.280599
+DTU Health Tech,DTU Wind,4,0.110659
+DTU Health Tech,DTU Space,4,0.262005
+DTU Bioengineering,DTU Management,4,0.671651
+DTU Bioengineering,DTU Energy,4,0.251389
+DTU Bioengineering,DTU Chemistry,4,0.327568
+DTU Chemistry,DTU Physics,4,0.339778
+DTU Compute,DTU Energy,4,0.223062
+DTU Bioengineering,DTU Construct,4,0.524226
+DTU Chemical Engineering,DTU Health Tech,4,0.424836
+DTU Aqua,DTU Chemical Engineering,4,0.282839
+DTU Chemistry,DTU Sustain,4,0.275078
+DTU Aqua,DTU Wind,4,0.090434
+DTU Bioengineering,DTU Sustain,4,0.562962
+DTU Chemistry,DTU Electro,4,0.289638
+DTU Aqua,DTU Space,4,0.205568
+DTU Bioengineering,DTU Wind,3,0.175109
+DTU Chemistry,DTU Energy,3,0.17429
+DTU Chemical Engineering,DTU Engineering Technology,3,0.494279
+DTU Food,DTU Wind,3,0.147624
+DTU Chemistry,DTU Health Tech,3,0.213072
+DTU Engineering Technology,DTU Wind,3,0.185649
+DTU Aqua,DTU Health Tech,3,0.190926
+DTU Chemical Engineering,DTU Space,3,0.383746
+DTU Aqua,DTU Physics,3,0.259268
+DTU Physics,DTU Space,3,0.43804
+DTU Chemistry,DTU Wind,3,0.084148
+DTU Compute,DTU Food,3,0.550317
+DTU Energy,DTU Food,3,0.17106
+DTU Physics,DTU Wind,3,0.152785
+DTU Aqua,DTU Food,3,0.251146
+DTU Electro,DTU Food,3,0.517865
+DTU Chemistry,DTU Construct,3,0.249355
+DTU Aqua,DTU Chemistry,2,0.139253
+DTU Bioengineering,DTU Engineering Technology,2,0.516871
+DTU Physics,DTU Sustain,2,0.48884
+DTU Bioengineering,DTU Space,2,0.403889
+DTU Chemistry,DTU Management,2,0.31477
+DTU Chemistry,DTU Compute,2,0.305298
+DTU Food,DTU Space,2,0.340833
+DTU Chemistry,DTU Space,2,0.18932
+DTU Energy,DTU Space,2,0.12595
+DTU Energy,DTU Engineering Technology,2,0.184251
+DTU Aqua,DTU Bioengineering,2,0.310274
+DTU Chemistry,DTU Engineering Technology,1,0.240777
+DTU Chemistry,DTU Food,1,0.271632
+DTU Engineering Technology,DTU Physics,1,0.448367
+DTU Engineering Technology,DTU Food,1,0.433903
+DTU Aqua,DTU Energy,1,0.085084
+DTU Aqua,DTU Engineering Technology,1,0.220234

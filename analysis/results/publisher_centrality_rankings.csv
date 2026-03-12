@@ -1,0 +1,17 @@
+publisher,degree_centrality,betweenness_centrality,community_id,rank_by_betweenness,rank_by_degree
+DTU Chemistry,1.0,0.35793650793650794,0,1,1
+DTU Engineering Technology,1.0,0.33492063492063495,1,2,2
+DTU Food,1.0,0.10634920634920633,0,3,3
+DTU Physics,1.0,0.08571428571428572,0,4,4
+DTU Aqua,1.0,0.07142857142857144,1,5,5
+DTU Energy,1.0,0.009523809523809525,0,6,6
+DTU Space,1.0,0.0071428571428571435,1,7,7
+DTU Bioengineering,1.0,0.002380952380952381,0,8,8
+DTU Chemical Engineering,1.0,0.0,0,9,9
+DTU Compute,1.0,0.0,1,10,10
+DTU Construct,1.0,0.0,1,11,11
+DTU Electro,1.0,0.0,1,12,12
+DTU Health Tech,1.0,0.0,0,13,13
+DTU Management,1.0,0.0,1,14,14
+DTU Sustain,1.0,0.0,1,15,15
+DTU Wind,1.0,0.0,1,16,16

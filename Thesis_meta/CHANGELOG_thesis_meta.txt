@@ -1,0 +1,32 @@
+Thesis meta pipeline – what was done
+
+1. Enrichment with abstracts (enrich_thesis_meta_abstracts.py)
+   - Source: gs://thesis_archive_bucket/extracted_data/extracted_metadata.json
+   - Join key: member_id_ss (CSV) = prefix of filename before first "_" in JSON (e.g. 5d1c8d66d9001d146569a4a4).
+   - Fills empty abstract_ts in thesis_meta_combined.csv with abstract from the JSON.
+   - Run: GCS_BUCKET=thesis_archive_bucket uv run python enrich_thesis_meta_abstracts.py
+
+2. Filtered file – only rows that exist in the bucket (filter_thesis_meta_to_bucket.py)
+   - Lists blobs under gs://thesis_archive_bucket/dtu_findit/master_thesis/ (GCS_PREFIX).
+   - Extracts member_id from each blob name (part before first "_").
+   - Keeps only CSV rows whose member_id_ss is in that set.
+   - Removes entirely empty rows (all cells blank).
+   - Writes Thesis_meta/thesis_meta_combined_filtered.csv.
+   - Uploads that file to gs://thesis_archive_bucket/dtu_findit/master_thesis_meta/thesis_meta_combined_filtered.csv
+   - Run: GCS_BUCKET=thesis_archive_bucket uv run python filter_thesis_meta_to_bucket.py
+
+3. Deduplication by ID
+   - Filter script output is one row per member_id_ss in the bucket (no duplicate-removal by ID in the script; CSV can still have multiple rows per ID if the source combined CSV had them).
+   - In the notebook: df_thesis.drop_duplicates() is used to keep unique rows after loading.
+
+4. Notebook (notebook.ipynb)
+   - Loads thesis_meta_combined.csv (full meta).
+   - New cell: lists member IDs from gs://thesis_archive_bucket/dtu_findit/master_thesis, filters df_thesis to rows where member_id_ss is in that set (same logic as filter script).
+   - Later cell: df_thesis.dropna(how="all") to remove entire empty rows, then drop_duplicates(), then .shape.
+
+Files
+   - thesis_meta_combined.csv: full thesis meta (enriched with abstracts where possible).
+   - thesis_meta_combined_filtered.csv: subset of rows whose member_id_ss has a PDF in the bucket; no fully empty rows; written locally and uploaded to dtu_findit/master_thesis_meta/.
+
+Affiliations column
+   - The filtered file shows empty Affiliations because in thesis_meta_combined.csv every row whose member_id_ss is in the bucket (all 6254) already has empty Affiliations. The pipeline does not strip or overwrite that column. Rows with non-empty Affiliations in the combined file are the older Findit records that are not in the bucket. So the gap is upstream: the source CSVs or export that contribute the "in-bucket" theses do not provide Affiliations for those records.
