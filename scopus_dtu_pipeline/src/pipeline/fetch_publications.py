@@ -44,20 +44,25 @@ def run(
                 for r in rows:
                     all_publications.append(_row_to_publication(r))
             if all_publications:
+                logger.info("Resuming from checkpoint: %s authors, %s publications already fetched", len(by_author), len(all_publications))
                 return all_publications
 
+    logger.info("Fetching publications for %s active researchers (enrich_with_abstract=%s)", len(active_researchers), enrich_with_abstract)
     for i, researcher in enumerate(active_researchers):
         aid = researcher.scopus_author_id
+        name = researcher.full_name or researcher.indexed_name or aid
         log_progress(logger, i + 1, len(active_researchers), "Publications")
+        logger.debug("Author %s/%s: %s (id=%s)", i + 1, len(active_researchers), name, aid)
         try:
             author_pubs = _fetch_author_publications(client, aid, enrich_with_abstract)
             by_author[aid] = [p.to_row() for p in author_pubs]
             all_publications.extend(author_pubs)
-            # Per-author raw for audit
+            logger.info("  %s: %s publications (total so far: %s)", name[:40], len(author_pubs), len(all_publications))
             write_json(pubs_dir / f"author_{aid}_publications.json", {"author_id": aid, "publications": [p.to_row() for p in author_pubs]})
         except Exception as e:
-            logger.warning("Publications failed for author %s: %s", aid, e)
+            logger.warning("Publications failed for author %s (%s): %s", aid, name[:30], e)
 
+    logger.info("Publications step done: %s authors, %s publications total", len(by_author), len(all_publications))
     result = {"by_author": by_author, "total_count": len(all_publications)}
     write_json(checkpoint, result)
     return all_publications
