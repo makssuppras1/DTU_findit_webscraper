@@ -1,0 +1,11 @@
+[project]
+name = "scopus-dtu-pipeline"
+version = "0.1.0"
+description = "Scopus-based metadata retrieval for DTU researchers and publications"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.28.0",
+    "pandas>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+]

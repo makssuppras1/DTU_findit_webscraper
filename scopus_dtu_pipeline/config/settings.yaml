@@ -1,0 +1,48 @@
+# Pipeline settings for Scopus DTU retrieval
+
+scopus:
+  base_url: "https://api.elsevier.com/content"
+  # Endpoints (paths appended to base_url)
+  affiliation_search: "/search/affiliation"
+  author_search: "/search/author"
+  author_retrieval: "/author/author_id"
+  scopus_search: "/search/scopus"
+  abstract_retrieval: "/abstract/scopus_id"
+
+retry:
+  max_attempts: 5
+  base_delay_seconds: 2
+  max_delay_seconds: 60
+
+rate_limit:
+  # Elsevier throttling: Author Search 2/s, Scopus Search 9/s, Author Retrieval 3/s, etc. Using 2/s to stay under all.
+  requests_per_second: 2
+
+cache:
+  enabled: true
+  dir: "data/raw/cache"
+  ttl_hours: 168  # 7 days
+
+pipeline:
+  active_years: 5
+  page_size: 25
+  # Scopus Author Search returns at most 5000 results per query; cap pagination
+  max_author_search_results: 5000
+  qualifying_doctypes:
+    - article
+    - conference paper
+    - review
+    - book chapter
+  excluded_doctypes:
+    - editorial
+    - note
+    - erratum
+    - letter
+
+paths:
+  raw: "data/raw"
+  processed: "data/processed"
+  logs: "data/logs"
+
+logging:
+  progress_interval: 50  # log progress every N authors
